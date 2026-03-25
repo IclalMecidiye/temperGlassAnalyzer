@@ -1,0 +1,14 @@
+# Kalibrasyon Log - Tüm referans görüntüler
+# format: dosya | gerçek | algo | hata% | tip | notlar
+
+img30.JPG | 143 | 148 | 3.5% | 400x400, normal | ✓
+1773234761834_image.png | 117 | 122 | 4.3% | büyük, az parça | ✓
+1773231408648_image.png | 287 | 274 | 4.5% | büyük, orta yoğun | ✓
+1773236622274_img107.JPG | 412 | 439 | 6.6% | 400x400, uzun/ince | ✓
+1773237226844_img103.JPG | 659 | 649 | 1.5% | 400x400, yoğun/küçük | ✓
+1773237319134_img102.JPG | 264 | 269 | 1.9% | 400x400, koyu | ✓
+1773238233566_image.png | 257 | 263 | 2.3% | büyük, ince parçalar | ✓
+1773239036825_image.png | 210 | 168 | 20% | büyük, büyük parçalar | ✗ global bozuk
+1773310095528_image.png | 180 | 288 | 60% | büyük, çok büyük parçalar | ✗ tile bozuk
+1773311060281_image.png | 230 | 249 | 8.3% | küçük (73k), orta | ~
+1773312214386_image.png | 220 | 203 | 8.2% | küçük (81k), yapışık parçalar | ~ seri max=192
