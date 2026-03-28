@@ -56,17 +56,12 @@ def _best_erosion(thresh_tile: np.ndarray, min_area: int, max_area: float):
     return best_count, best_stats, best_centroids
 
 
-def _count_on_thresh(thresh: np.ndarray, h: int, w: int) -> tuple[int, list]:
-    """
-    Eşiklenmiş görüntüyü 2x2 tile'a böl,
-    her tile için ayrı erosion optimizasyonu uygula,
-    tüm geçerli merkezleri global koordinatlarda döndür.
-    """
+def _count_on_thresh(thresh, h, w):
     tiles = [
-        (0,     h // 2, 0,     w // 2),
-        (0,     h // 2, w // 2, w),
-        (h // 2, h,     0,     w // 2),
-        (h // 2, h,     w // 2, w),
+        (0,      h // 2, 0,      w // 2),
+        (0,      h // 2, w // 2, w),
+        (h // 2, h,      0,      w // 2),
+        (h // 2, h,      w // 2, w),
     ]
 
     all_centers = []
@@ -86,13 +81,17 @@ def _count_on_thresh(thresh: np.ndarray, h: int, w: int) -> tuple[int, list]:
 
         if stats is not None:
             areas = stats[1:, cv2.CC_STAT_AREA]
-            for i, area in enumerate(areas):
-                if min_area < area < max_area:
-                    cx, cy = centroids[i + 1].astype(int)
-                    all_centers.append((int(cx + x1), int(cy + y1)))
+            valid_indices = np.where((areas > min_area) & (areas < max_area))[0]
+            # ÖNEMLİ: sadece geçerli indeksleri ekle, sıralama bozulmasın
+            for i in valid_indices:
+                cx, cy = centroids[i + 1].astype(int)
+                all_centers.append((int(cx + x1), int(cy + y1)))
+
+    # total_count ile all_centers uzunluğu artık eşit olmalı
+    assert len(all_centers) == total_count, \
+        f"Uyuşmazlık: {len(all_centers)} nokta, {total_count} count"
 
     return total_count, all_centers
-
 
 def _global_count(blur: np.ndarray, h: int, w: int, block: int = 51) -> tuple[int, list, np.ndarray]:
     """
