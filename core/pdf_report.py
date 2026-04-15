@@ -72,11 +72,16 @@ def _bgr_pil(bgr):
     return Image.fromarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
 
 
+# Module-level list to track temporary files for cleanup after PDF build.
+_temp_files: list[str] = []
+
+
 def _rl_img(pil_img, max_w, max_h):
     ratio = min(max_w / pil_img.width, max_h / pil_img.height, 1.0)
     tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
     pil_img.save(tmp.name, "JPEG", quality=88)
     tmp.close()
+    _temp_files.append(tmp.name)
     return RLImage(tmp.name,
                    width=pil_img.width * ratio,
                    height=pil_img.height * ratio)
@@ -217,4 +222,13 @@ def save_pdf(path, original_bgr, result_bgr, results, filename=""):
     story.append(P("Temperli Cam Analizi  —  Otomatik Kirik Sayim Sistemi",
                    _ps("ft", size=7, color="#64748b", align=TA_CENTER)))
 
-    doc.build(story)
+    try:
+        doc.build(story)
+    finally:
+        # Clean up temporary image files to avoid leaking data on disk.
+        for tmp_path in _temp_files:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+        _temp_files.clear()

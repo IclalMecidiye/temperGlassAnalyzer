@@ -3,12 +3,32 @@ core/ml_predict.py  -  ML modeli ile parça sayımı tahmini.
 Hem sklearn (GradientBoosting) hem PyTorch modellerini destekler.
 """
 
+import hashlib
+import hmac
+import logging
 import os
 import pickle
+
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
 MODEL_PATH = os.path.join(os.path.dirname(__file__), 'ml_model.pkl')
-_cache = {}
+MODEL_HASH_PATH = MODEL_PATH + '.sha256'
+_cache: dict = {}
+
+# Known SHA-256 hash of the trusted ml_model.pkl shipped with the repo.
+_TRUSTED_HASH = "e3bd7796e4eee4ab40f44fa2f8b0c525941a7d6ceaf5c31a277dece5f96a0b42"
+
+
+def _verify_model_integrity(data: bytes) -> bool:
+    """Verify the pickle file has not been tampered with.
+
+    Checks the SHA-256 digest of the raw bytes against the hard-coded
+    trusted hash.  Returns True only when the file matches.
+    """
+    file_hash = hashlib.sha256(data).hexdigest()
+    return hmac.compare_digest(file_hash, _TRUSTED_HASH)
 
 
 def _load():
@@ -16,7 +36,14 @@ def _load():
         if not os.path.exists(MODEL_PATH):
             return None
         with open(MODEL_PATH, 'rb') as f:
-            _cache['data'] = pickle.load(f)
+            raw = f.read()
+        if not _verify_model_integrity(raw):
+            logger.warning(
+                "ml_model.pkl integrity check FAILED — the file may have "
+                "been tampered with.  Model will NOT be loaded."
+            )
+            return None
+        _cache['data'] = pickle.loads(raw)  # noqa: S301 — verified above
     return _cache['data']
 
 
