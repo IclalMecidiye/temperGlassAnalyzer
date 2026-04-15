@@ -4,13 +4,14 @@ Seçilen bölgeyi crop edip kaydeder.
 """
 
 import csv
-import os
 import datetime
+import os
+import re
 import tkinter as tk
-import ttkbootstrap as ttk
-from tkinter import messagebox
 
 import cv2
+import ttkbootstrap as ttk
+from tkinter import messagebox
 
 from config import BG_CARD, BG_DARK, BG_MID, FG_DIM, ACCENT, RENK1_HEX, RENK2_HEX
 
@@ -29,13 +30,28 @@ def _ensure_csv():
             ])
 
 
+def _sanitize_filename(name: str) -> str:
+    """Remove characters that are unsafe for file names."""
+    # Allow only alphanumerics, hyphens, underscores, and dots.
+    sanitized = re.sub(r'[^\w.\-]', '_', name)
+    # Prevent path traversal components.
+    sanitized = sanitized.replace('..', '_')
+    return sanitized[:200]  # limit length
+
+
 def _save_crop(region_bgr, filename, count, idx):
     """Bölge görüntüsünü crop klasörüne kaydeder, dosya adını döndürür."""
     os.makedirs(CROP_KLASOR, exist_ok=True)
     base = os.path.splitext(os.path.basename(filename))[0] if filename else "goruntu"
+    base = _sanitize_filename(base)
     tarih = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     crop_name = f"{base}_bolge{idx+1}_{count}_{tarih}.jpg"
     crop_path = os.path.join(CROP_KLASOR, crop_name)
+    # Final safety check: ensure the resolved path stays inside CROP_KLASOR.
+    real_dir = os.path.realpath(CROP_KLASOR)
+    real_path = os.path.realpath(crop_path)
+    if not real_path.startswith(real_dir + os.sep):
+        raise ValueError("Invalid crop path — possible path traversal.")
     cv2.imwrite(crop_path, region_bgr)
     return crop_name
 
@@ -109,7 +125,12 @@ def show_save_dialog(parent, filename: str, counts: list, regions: list):
                 messagebox.showwarning("Hata",
                     f"Bölge {i+1} için geçerli bir sayı girin.", parent=win)
                 return
-            satirlar.append((i, counts[i], int(gercek_txt)))
+            gercek_val = int(gercek_txt)
+            if gercek_val > 99999:
+                messagebox.showwarning("Hata",
+                    f"Bölge {i+1}: değer çok büyük (maks 99999).", parent=win)
+                return
+            satirlar.append((i, counts[i], gercek_val))
 
         _ensure_csv()
         tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
