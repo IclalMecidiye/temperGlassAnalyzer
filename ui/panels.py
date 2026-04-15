@@ -6,15 +6,17 @@ from config import BG_CARD, BG_MID, FG_MAIN, FG_DIM, ACCENT, RENK1_HEX, RENK2_HE
 MAX_BOLGE = 2
 
 
-def _section_header(parent, title: str) -> None:
-    ttk.Label(
+def _section_header(parent, title: str) -> ttk.Label:
+    lbl = ttk.Label(
         parent, text=title,
         font=("Courier New", 9, "bold"),
         foreground=ACCENT, background=BG_CARD,
-    ).pack(anchor="w", padx=14, pady=(16, 4))
+    )
+    lbl.pack(anchor="w", padx=14, pady=(16, 4))
     ttk.Frame(parent, height=1, style="Card.TFrame").pack(
         fill="x", padx=14, pady=(0, 8)
     )
+    return lbl
 
 
 class LeftPanel(ttk.Frame):
@@ -36,30 +38,37 @@ class LeftPanel(ttk.Frame):
         self._build()
 
     def _build(self) -> None:
+        self._section_labels: list[ttk.Label] = []
+        self._bolge_labels: list[ttk.Label] = []
+        self._count_labels: list[ttk.Label] = []
+        self._unit_labels: list[ttk.Label] = []
         self._build_results()
         self._build_actions()
 
     def _build_results(self) -> None:
-        _section_header(self, "SONUÇLAR")
+        self._section_labels.append(_section_header(self, "SONUÇLAR"))
         colors = [RENK1_HEX, RENK2_HEX]
         for i in range(MAX_BOLGE):
             card = ttk.Frame(self, style="Card.TFrame")
             card.pack(fill="x", padx=10, pady=4)
-            ttk.Label(card, text=f"  BÖLGE {i + 1}",
-                      font=("Courier New", 8, "bold"),
-                      foreground=colors[i], background=BG_CARD,
-                      ).pack(anchor="w", padx=6, pady=(6, 0))
-            ttk.Label(card, textvariable=self.result_vars[i],
-                      font=("Courier New", 26, "bold"),
-                      foreground=colors[i], background=BG_CARD,
-                      ).pack(anchor="w", padx=10)
-            ttk.Label(card, text="parça",
-                      font=("Courier New", 8),
-                      foreground=FG_DIM, background=BG_CARD,
-                      ).pack(anchor="w", padx=10, pady=(0, 6))
+            bl = ttk.Label(card, text=f"  BÖLGE {i + 1}",
+                           font=("Courier New", 8, "bold"),
+                           foreground=colors[i], background=BG_CARD)
+            bl.pack(anchor="w", padx=6, pady=(6, 0))
+            self._bolge_labels.append(bl)
+            cl = ttk.Label(card, textvariable=self.result_vars[i],
+                           font=("Courier New", 26, "bold"),
+                           foreground=colors[i], background=BG_CARD)
+            cl.pack(anchor="w", padx=10)
+            self._count_labels.append(cl)
+            ul = ttk.Label(card, text="parça",
+                           font=("Courier New", 8),
+                           foreground=FG_DIM, background=BG_CARD)
+            ul.pack(anchor="w", padx=10, pady=(0, 6))
+            self._unit_labels.append(ul)
 
     def _build_actions(self) -> None:
-        _section_header(self, "İŞLEMLER")
+        self._section_labels.append(_section_header(self, "İŞLEMLER"))
         buttons = [
             ("Fotoğraf Yükle",  "info",      lambda: self.on_load    and self.on_load()),
             ("Analiz Et",       "success",   lambda: self.on_analyze and self.on_analyze()),
@@ -75,6 +84,20 @@ class LeftPanel(ttk.Frame):
     def reset_results(self) -> None:
         for v in self.result_vars:
             v.set("—")
+
+    def apply_theme(self, palette: dict) -> None:
+        bg_card = palette["bg_card"]
+        fg_dim  = palette["fg_dim"]
+        accent  = palette["accent"]
+
+        for lbl in self._section_labels:
+            lbl.configure(foreground=accent, background=bg_card)
+        for lbl in self._bolge_labels:
+            lbl.configure(background=bg_card)
+        for lbl in self._count_labels:
+            lbl.configure(background=bg_card)
+        for lbl in self._unit_labels:
+            lbl.configure(foreground=fg_dim, background=bg_card)
 
 
 class CropTab(ttk.Frame):
@@ -106,3 +129,9 @@ class CropTab(ttk.Frame):
     def clear(self) -> None:
         self.image_label.config(image="", text="Henüz seçilmedi")
         self.image_label.image = None
+
+    def apply_theme(self, palette: dict) -> None:
+        self.image_label.configure(
+            background=palette["bg_mid"],
+            foreground=palette["fg_dim"],
+        )
