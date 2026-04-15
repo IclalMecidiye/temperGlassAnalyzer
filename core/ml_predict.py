@@ -14,7 +14,6 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), 'ml_model.pkl')
-MODEL_HASH_PATH = MODEL_PATH + '.sha256'
 _cache: dict = {}
 
 # Known SHA-256 hash of the trusted ml_model.pkl shipped with the repo.

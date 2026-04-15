@@ -4,13 +4,14 @@ Seçilen bölgeyi crop edip kaydeder.
 """
 
 import csv
-import os
 import datetime
+import os
+import re
 import tkinter as tk
-import ttkbootstrap as ttk
-from tkinter import messagebox
 
 import cv2
+import ttkbootstrap as ttk
+from tkinter import messagebox
 
 from config import BG_CARD, BG_DARK, BG_MID, FG_DIM, ACCENT, RENK1_HEX, RENK2_HEX
 
@@ -32,7 +33,6 @@ def _ensure_csv():
 def _sanitize_filename(name: str) -> str:
     """Remove characters that are unsafe for file names."""
     # Allow only alphanumerics, hyphens, underscores, and dots.
-    import re
     sanitized = re.sub(r'[^\w.\-]', '_', name)
     # Prevent path traversal components.
     sanitized = sanitized.replace('..', '_')
@@ -120,17 +120,17 @@ def show_save_dialog(parent, filename: str, counts: list, regions: list):
         for i, var in enumerate(gercek_vars):
             if var is None:
                 continue
-                gercek_txt = var.get().strip()
-                if not gercek_txt.isdigit():
-                    messagebox.showwarning("Hata",
-                        f"Bölge {i+1} için geçerli bir sayı girin.", parent=win)
-                    return
-                gercek_val = int(gercek_txt)
-                if gercek_val > 99999:
-                    messagebox.showwarning("Hata",
-                        f"Bölge {i+1}: değer çok büyük (maks 99999).", parent=win)
-                    return
-                satirlar.append((i, counts[i], gercek_val))
+            gercek_txt = var.get().strip()
+            if not gercek_txt.isdigit():
+                messagebox.showwarning("Hata",
+                    f"Bölge {i+1} için geçerli bir sayı girin.", parent=win)
+                return
+            gercek_val = int(gercek_txt)
+            if gercek_val > 99999:
+                messagebox.showwarning("Hata",
+                    f"Bölge {i+1}: değer çok büyük (maks 99999).", parent=win)
+                return
+            satirlar.append((i, counts[i], gercek_val))
 
         _ensure_csv()
         tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
