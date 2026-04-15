@@ -14,6 +14,7 @@ from tkinter import filedialog, messagebox
 from config import (
     ACCENT, BG_CARD, BG_DARK, BG_MID, FG_DIM,
     IMAGE_FILETYPES, CROP_MAX_SIZE, WINDOW_SIZE, WINDOW_MIN,
+    THEMES,
 )
 from core.analysis import count_fragments
 from core.image_utils import draw_analysis_result
@@ -30,6 +31,8 @@ class App(ttk.Window):
         self.geometry(WINDOW_SIZE)
         self.minsize(*WINDOW_MIN)
         self.configure(bg=BG_DARK)
+
+        self._current_theme = "dark"
 
         self._image      = None
         self._image_path = ""
@@ -58,13 +61,24 @@ class App(ttk.Window):
         self._build_status_bar()
 
     def _build_header(self) -> None:
-        header = ttk.Frame(self, style="Card.TFrame")
-        header.pack(fill="x")
-        ttk.Label(header,
-                  text="  🔬  TEMPERLİ CAM ANALİZİ",
-                  font=("Segoe UI", 16, "bold"),
-                  foreground=ACCENT, background=BG_CARD,
-                  ).pack(side="left", padx=18, pady=12)
+        self._header = ttk.Frame(self, style="Card.TFrame")
+        self._header.pack(fill="x")
+        self._header_label = ttk.Label(
+            self._header,
+            text="  🔬  TEMPERLİ CAM ANALİZİ",
+            font=("Segoe UI", 16, "bold"),
+            foreground=ACCENT, background=BG_CARD,
+        )
+        self._header_label.pack(side="left", padx=18, pady=12)
+
+        self._theme_btn = ttk.Button(
+            self._header,
+            text="☀️ Açık Tema",
+            bootstyle="warning-outline",
+            command=self._toggle_theme,
+            width=14,
+        )
+        self._theme_btn.pack(side="right", padx=18, pady=12)
 
     def _build_left_panel(self) -> None:
         self._left = LeftPanel(self)
@@ -97,11 +111,13 @@ class App(ttk.Window):
     def _build_status_bar(self) -> None:
         bar = ttk.Frame(self, style="Card.TFrame")
         bar.pack(fill="x", side="bottom")
-        ttk.Label(bar,
-                  textvariable=self._status_var,
-                  foreground=FG_DIM, background=BG_CARD,
-                  font=("Segoe UI", 8),
-                  ).pack(side="left", padx=12, pady=5)
+        self._status_label = ttk.Label(
+            bar,
+            textvariable=self._status_var,
+            foreground=FG_DIM, background=BG_CARD,
+            font=("Segoe UI", 8),
+        )
+        self._status_label.pack(side="left", padx=12, pady=5)
 
     # ── Callback'ler ─────────────────────────────────────────────────────────
 
@@ -271,6 +287,43 @@ class App(ttk.Window):
         while len(counts)  < 2: counts.append(None)
         while len(regions) < 2: regions.append(None)
         show_save_dialog(self, self._image_path, counts[:2], regions[:2])
+
+    # ── Tema değiştirme ────────────────────────────────────────────────────
+
+    def _toggle_theme(self) -> None:
+        new_theme = "light" if self._current_theme == "dark" else "dark"
+        self._current_theme = new_theme
+        palette = THEMES[new_theme]
+
+        self.style.theme_use(palette["ttk_theme"])
+
+        bg_dark = palette["bg_dark"]
+        bg_card = palette["bg_card"]
+        bg_mid  = palette["bg_mid"]
+        fg_dim  = palette["fg_dim"]
+        accent  = palette["accent"]
+
+        style = ttk.Style()
+        style.configure("TFrame",      background=bg_dark)
+        style.configure("Card.TFrame", background=bg_card)
+
+        self.configure(bg=bg_dark)
+
+        self._header_label.configure(foreground=accent, background=bg_card)
+
+        if new_theme == "dark":
+            self._theme_btn.configure(text="☀️ Açık Tema", bootstyle="warning-outline")
+        else:
+            self._theme_btn.configure(text="🌙 Koyu Tema", bootstyle="info-outline")
+
+        self._left.apply_theme(palette)
+
+        self._canvas.configure(background=bg_mid, foreground=fg_dim)
+
+        for tab in self._crop_tabs:
+            tab.apply_theme(palette)
+
+        self._status_label.configure(foreground=fg_dim, background=bg_card)
 
     def _clear_all(self) -> None:
         self._boxes      = []
