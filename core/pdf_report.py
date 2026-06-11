@@ -176,9 +176,19 @@ def save_pdf(path, original_bgr, result_bgr, results, filename=""):
     story.append(Spacer(1, 0.4*cm))
 
     crop_cells = []
-    for i, (count, x1, y1, x2, y2, _) in enumerate(results):
-        xs1,xs2 = sorted([x1,x2]); ys1,ys2 = sorted([y1,y2])
-        crop = original_bgr[ys1:ys2, xs1:xs2]
+    for i, result in enumerate(results):
+        count, x1, y1, x2, y2 = result[0], result[1], result[2], result[3], result[4]
+        box = result[6] if len(result) > 6 else None
+        xs1, xs2 = sorted([x1, x2]); ys1, ys2 = sorted([y1, y2])
+        if isinstance(box, list):
+            pts = np.array(box, dtype=np.int32)
+            crop = original_bgr[ys1:ys2, xs1:xs2].copy()
+            shifted = pts - [xs1, ys1]
+            mask = np.zeros(crop.shape[:2], dtype=np.uint8)
+            cv2.fillPoly(mask, [shifted], 255)
+            crop[mask == 0] = 255
+        else:
+            crop = original_bgr[ys1:ys2, xs1:xs2]
         if crop.size == 0:
             continue
         rl = _rl_img(_bgr_pil(crop), cw/2 - 0.4*cm, 6*cm)

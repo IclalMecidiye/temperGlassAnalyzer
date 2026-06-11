@@ -1,3 +1,5 @@
+import cv2
+cv2.setNumThreads(1)  # OpenCV iç thread'leri GIL ile çakışıyor, kapat
 
 from ui.app import App
 

@@ -82,23 +82,17 @@ def _count_on_thresh(thresh, h, w):
         if stats is not None:
             areas = stats[1:, cv2.CC_STAT_AREA]
             valid_indices = np.where((areas > min_area) & (areas < max_area))[0]
-            # ÖNEMLİ: sadece geçerli indeksleri ekle, sıralama bozulmasın
             for i in valid_indices:
                 cx, cy = centroids[i + 1].astype(int)
                 all_centers.append((int(cx + x1), int(cy + y1)))
 
-    # total_count ile all_centers uzunluğu artık eşit olmalı
     assert len(all_centers) == total_count, \
         f"Uyuşmazlık: {len(all_centers)} nokta, {total_count} count"
 
     return total_count, all_centers
 
 def _global_count(blur: np.ndarray, h: int, w: int, block: int = 51) -> tuple[int, list, np.ndarray]:
-    """
-    Global (tile'sız) analiz — büyük parçalar için.
-    block=51 ile medyan parça alanı tahmin edilir,
-    sonra optimal block = 4.1 * sqrt(median) formülüyle hesaplanır.
-    """
+ 
     kernel   = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     min_area = max(8, h * w * 0.00009)
     max_area = h * w * 0.15
@@ -157,6 +151,7 @@ def _detect_median_area(blur: np.ndarray, h: int, w: int) -> float:
     return float(np.median(valid)) if len(valid) > 0 else 30.0
 
 
+
 def count_fragments(region_bgr: np.ndarray, use_ml: bool = True) -> tuple[int, list, np.ndarray]:
     """
     BGR bölgesindeki cam parçası sayısını döndürür.
@@ -207,8 +202,6 @@ def count_fragments(region_bgr: np.ndarray, use_ml: bool = True) -> tuple[int, l
     else:
         t_count, t_centers, t_thresh = c21, centers21, t21
 
-    # Karar: SADECE tam 400x400 kare (155k-165k px) → tile daha doğru
-    #        diğer tüm boyutlar → global daha doğru
     img_area = h * w
     tg_ratio  = t_count / g_count if g_count > 0 else 99.0
     is_square_400 = (155000 <= img_area <= 165000)
@@ -222,7 +215,6 @@ def count_fragments(region_bgr: np.ndarray, use_ml: bool = True) -> tuple[int, l
         cv_centers = g_centers
         cv_thresh = g_thresh
 
-    # ML modeli varsa ikisini karşılaştır, daha güvenilir olanı seç
     if use_ml:
         try:
             from core.ml_predict import ml_count
@@ -230,8 +222,6 @@ def count_fragments(region_bgr: np.ndarray, use_ml: bool = True) -> tuple[int, l
             if ml_result is not None:
                 diff_ratio = abs(ml_result - cv_count) / max(cv_count, 1)
                 if diff_ratio > 0.3:
-                    # ML sayısına en yakın CV center listesini bul
-                    # (en az hatalı olanı döndür, noktalar sayıyla uyuşsun)
                     best_centers = cv_centers
                     best_diff = abs(len(cv_centers) - ml_result)
                     for blk_res in results.values():
